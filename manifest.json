@@ -3,6 +3,8 @@
   "name": "Salesforce CRM Extractor",
   "version": "1.0.0",
   "description": "Extract data from Salesforce Lightning pages",
+  "permissions": ["tabs"],
+  "host_permissions": ["https://*.lightning.force.com/*"],
   "background": {
     "service_worker": "background.js"
   },
