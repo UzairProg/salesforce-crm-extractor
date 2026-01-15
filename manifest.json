@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Salesforce CRM Extractor",
   "version": "1.0.0",
-  "description": "Extract data from Salesforce Lightning pages",
-  "permissions": ["tabs"],
+  "description": "Extract Opportunity data from Salesforce Lightning",
+  "permissions": ["storage", "activeTab"],
   "host_permissions": ["https://*.lightning.force.com/*"],
   "background": {
     "service_worker": "background.js"
