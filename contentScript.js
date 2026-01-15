@@ -72,7 +72,29 @@ function removeStatusIndicator() {
   }
 }
 
-function findValueForLabel(labelText) {
+function extractOpportunityName() {
+  // Strategy 1: Look for h1 with record title
+  const h1 = document.querySelector('h1[data-aura-rendered-by], h1.slds-page-header__title');
+  if (h1) {
+    const name = h1.textContent.trim();
+    if (name && name.length < 200) {
+      return name;
+    }
+  }
+  
+  // Strategy 2: Look for specific Lightning component title
+  const titleSlot = document.querySelector('slot[name="primaryField"] lightning-formatted-text');
+  if (titleSlot) {
+    const name = titleSlot.textContent.trim();
+    if (name && name.length < 200) {
+      return name;
+    }
+  }
+  
+  return null;
+}
+
+function findValueForLabel(labelText, retryOnPlaceholder = false) {
   // Find text node with exact label match
   const walker = document.createTreeWalker(
     document.body,
@@ -91,8 +113,14 @@ function findValueForLabel(labelText) {
       let next = labelEl.nextElementSibling;
       if (next) {
         const value = next.textContent.trim();
-        if (value && value.length < 100 && value !== '—') {
-          return value;
+        if (value && value.length < 100) {
+          if (value === '—' && retryOnPlaceholder) {
+            // Wait and retry once for dynamic values
+            continue;
+          }
+          if (value !== '—') {
+            return cleanValue(value, labelText);
+          }
         }
       }
       
@@ -102,8 +130,13 @@ function findValueForLabel(labelText) {
         const nextParent = parent.nextElementSibling;
         if (nextParent && nextParent.textContent) {
           const value = nextParent.textContent.trim();
-          if (value && value.length < 100 && value !== '—' && !value.toLowerCase().includes(labelText.toLowerCase())) {
-            return value;
+          if (value && value.length < 100) {
+            if (value === '—' && retryOnPlaceholder) {
+              continue;
+            }
+            if (value !== '—' && !value.toLowerCase().includes(labelText.toLowerCase())) {
+              return cleanValue(value, labelText);
+            }
           }
         }
       }
@@ -113,8 +146,13 @@ function findValueForLabel(labelText) {
         for (let child of parent.children) {
           if (child !== labelEl) {
             const value = child.textContent.trim();
-            if (value && value.length < 100 && value !== '—' && !value.toLowerCase().includes(labelText.toLowerCase())) {
-              return value;
+            if (value && value.length < 100) {
+              if (value === '—' && retryOnPlaceholder) {
+                continue;
+              }
+              if (value !== '—' && !value.toLowerCase().includes(labelText.toLowerCase())) {
+                return cleanValue(value, labelText);
+              }
             }
           }
         }
@@ -123,6 +161,27 @@ function findValueForLabel(labelText) {
   }
   
   return null;
+}
+
+function cleanValue(value, labelText) {
+  // Remove common Salesforce UI noise
+  let cleaned = value
+    .replace(/\bOpen\b/gi, '')
+    .replace(/\bPreview\b/gi, '')
+    .replace(/\bEdit\b/gi, '')
+    .replace(/\bDelete\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  // If cleaned value contains the label, try to extract just the value part
+  if (cleaned.toLowerCase().includes(labelText.toLowerCase())) {
+    const parts = cleaned.split(labelText);
+    if (parts.length > 1) {
+      cleaned = parts[1].trim();
+    }
+  }
+  
+  return cleaned || null;
 }
 
 function extractOpportunityData() {
@@ -134,12 +193,31 @@ function extractOpportunityData() {
     pageObserver = null;
   }
   
+  // Extract Opportunity Name from page header
+  const name = extractOpportunityName();
+  
+  // Extract fields with retry logic for placeholders
+  let stage = findValueForLabel('Stage', true);
+  let probability = findValueForLabel('Probability (%)', true) || findValueForLabel('Probability', true);
+  
+  // Retry once if we got placeholders
+  if (stage === null || stage === '—') {
+    setTimeout(() => {
+      stage = findValueForLabel('Stage', false);
+    }, 200);
+  }
+  if (probability === null || probability === '—') {
+    setTimeout(() => {
+      probability = findValueForLabel('Probability (%)', false) || findValueForLabel('Probability', false);
+    }, 200);
+  }
+  
   const data = {
     id: Date.now().toString(),
-    name: findValueForLabel('Opportunity Name') || findValueForLabel('Name'),
-    stage: findValueForLabel('Stage'),
+    name: name,
+    stage: stage,
     amount: findValueForLabel('Amount'),
-    probability: findValueForLabel('Probability (%)') || findValueForLabel('Probability'),
+    probability: probability,
     closeDate: findValueForLabel('Close Date'),
     accountName: findValueForLabel('Account Name') || findValueForLabel('Account')
   };
