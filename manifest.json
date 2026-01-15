@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Salesforce CRM Extractor",
+  "version": "1.0.0",
+  "description": "Extract data from Salesforce Lightning pages",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.lightning.force.com/*"],
+      "js": ["contentScript.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
