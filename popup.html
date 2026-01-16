@@ -34,6 +34,29 @@
       background: #999;
       cursor: not-allowed;
     }
+    .export-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .export-btn {
+      flex: 1;
+      padding: 8px;
+      cursor: pointer;
+      background: #f0f0f0;
+      color: #333;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .export-btn:hover {
+      background: #e0e0e0;
+    }
+    .export-btn:active {
+      background: #d0d0d0;
+    }
     #status {
       min-height: 20px;
       padding: 8px;
@@ -95,8 +118,14 @@
 </head>
 <body>
   <button id="extractBtn">Extract Current Object</button>
+  <div class="export-buttons">
+    <button class="export-btn" id="exportJsonBtn">Export as JSON</button>
+    <button class="export-btn" id="exportCsvBtn">Export as CSV</button>
+  </div>
   <div id="status"></div>
   <div id="recordsList"></div>
   <script src="popup.js"></script>
+</body>
+</html>
 </body>
 </html>

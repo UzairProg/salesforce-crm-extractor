@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const extractBtn = document.getElementById('extractBtn');
+  const exportJsonBtn = document.getElementById('exportJsonBtn');
+  const exportCsvBtn = document.getElementById('exportCsvBtn');
   const status = document.getElementById('status');
   const recordsList = document.getElementById('recordsList');
   
@@ -19,6 +21,79 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+  
+  exportJsonBtn.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ action: 'GET_STORED_DATA' }, (response) => {
+      const data = response?.data || { opportunities: [], lastSync: null };
+      
+      if (!data.opportunities || data.opportunities.length === 0) {
+        status.textContent = 'No data to export';
+        return;
+      }
+      
+      const jsonData = JSON.stringify(data.opportunities, null, 2);
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'salesforce_opportunities.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      status.textContent = `Exported ${data.opportunities.length} record(s) as JSON`;
+    });
+  });
+  
+  exportCsvBtn.addEventListener('click', () => {
+    chrome.runtime.sendMessage({ action: 'GET_STORED_DATA' }, (response) => {
+      const data = response?.data || { opportunities: [], lastSync: null };
+      
+      if (!data.opportunities || data.opportunities.length === 0) {
+        status.textContent = 'No data to export';
+        return;
+      }
+      
+      const csvContent = convertToCSV(data.opportunities);
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'salesforce_opportunities.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      status.textContent = `Exported ${data.opportunities.length} record(s) as CSV`;
+    });
+  });
+  
+  function convertToCSV(opportunities) {
+    const headers = ['Opportunity Name', 'Stage', 'Amount', 'Probability', 'Close Date', 'Account Name', 'Extracted At'];
+    const csvRows = [headers.join(',')];
+    
+    opportunities.forEach((opp) => {
+      const row = [
+        escapeCSV(opp.name || ''),
+        escapeCSV(opp.stage || ''),
+        escapeCSV(opp.amount || ''),
+        escapeCSV(opp.probability || ''),
+        escapeCSV(opp.closeDate || ''),
+        escapeCSV(opp.accountName || ''),
+        escapeCSV(new Date(opp.extractedAt).toLocaleString())
+      ];
+      csvRows.push(row.join(','));
+    });
+    
+    return csvRows.join('\n');
+  }
+  
+  function escapeCSV(value) {
+    if (value === null || value === undefined) return '';
+    const strValue = String(value);
+    if (strValue.includes(',') || strValue.includes('"') || strValue.includes('\n')) {
+      return `"${strValue.replace(/"/g, '""')}"`;
+    }
+    return strValue;
+  }
   
   function loadRecords() {
     chrome.runtime.sendMessage({ action: 'GET_STORED_DATA' }, (response) => {
