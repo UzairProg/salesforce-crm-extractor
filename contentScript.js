@@ -187,20 +187,17 @@ function cleanValue(value, labelText) {
 function extractOpportunityData() {
   showStatusIndicator('Extracting Opportunity...');
   
-  // Disconnect observer when extraction starts
   if (pageObserver) {
     pageObserver.disconnect();
     pageObserver = null;
   }
-  
-  // Extract Opportunity Name from page header
+
   const name = extractOpportunityName();
   
-  // Extract fields with retry logic for placeholders
   let stage = findValueForLabel('Stage', true);
   let probability = findValueForLabel('Probability (%)', true) || findValueForLabel('Probability', true);
   
-  // Retry once if we got placeholders
+
   if (stage === null || stage === '—') {
     setTimeout(() => {
       stage = findValueForLabel('Stage', false);
@@ -242,13 +239,11 @@ function extractOpportunityData() {
 }
 
 function waitForPageReady() {
-  // Check if labels are already present
   if (detectObjectType() === 'opportunity') {
     console.log('[ContentScript] Opportunity labels already present');
     return;
   }
   
-  // Otherwise watch for mutations
   pageObserver = new MutationObserver(() => {
     if (detectObjectType() === 'opportunity') {
       console.log('[ContentScript] Opportunity labels detected via observer');
@@ -264,7 +259,6 @@ function waitForPageReady() {
     attributes: false
   });
   
-  // Timeout after 5 seconds
   setTimeout(() => {
     if (pageObserver) {
       pageObserver.disconnect();
@@ -274,10 +268,10 @@ function waitForPageReady() {
   }, 5000);
 }
 
-// Initialize on script load
+
 waitForPageReady();
 
-// Single message listener (ensure no duplicates)
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'EXTRACT_CURRENT_OBJECT') {
     const objectType = detectObjectType();
